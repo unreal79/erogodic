@@ -1,0 +1,195 @@
+local Ero = require 'libs.erogodic'
+local Example2 = {}
+local Talkies = require 'libs.talkies'
+local displayMessageNode
+local imgAvatar
+local sndTalk
+local sndType
+
+local script = Ero(function()
+  name("Tutorial")
+  config({
+    image = imgAvatar,
+    titleColor = {1, 1, 1, 0.8},
+    textSpeed = "fast",
+    typedNotTalked = false,
+    talkSound = sndTalk,
+    onstart = function(dialog)
+      print("are we showing:", dialog:isShown())
+    end,
+    onmessage = function(dialog, left)
+      print(left .. " messages left in the dialog, is showing:", dialog:isShown())
+    end,
+    oncomplete = function(dialog)
+      print("are we still showing:", dialog:isShown())
+    end
+  })
+  msg({
+    "Talkies is a simple to use messagebox library.",
+    "Talkies includes:\nMultiple choices, UTF8 text, Pauses, -- Onstart/OnMessage/Oncomplete " ..
+    "functions, Complete customization, Variable typing speeds amongst other things."
+  })
+
+  name("Selecting options")
+  config({
+    textSpeed = "slow",
+    typedNotTalked = true,
+    talkSound = sndType,
+  })
+  msg("Typing sound is aligned with the text speed...")
+
+  local red = option("Red")
+  local blue = option("Blue")
+  local green = option("Green")
+  menu("Here's some options:")
+  if selection(red) then
+    selectedColor("Red")
+  elseif selection(blue) then
+    selectedColor("Blue")
+  elseif selection(green) then
+    selectedColor("Green")
+  end
+
+  config({
+    image = imgAvatar,
+    titleColor = {1, 1, 1, 0.8},
+    textSpeed = "fast",
+    typedNotTalked = false,
+    talkSound = sndTalk,
+  })
+  name("Tutorial")
+  msg("Each message is added to a \"message queue\", " ..
+      "i.e. they're presented in the order that they're called. This is part " ..
+      "of the design of Möan.lua")
+
+  name("UTF8 example")
+  msg("アイ・ドーント・ノー・ジャパニーズ・ホープフリー・ジス・トランズレーター・ダズント・" ..
+      "メス・ジス・アップ・トゥー・マッチ")
+  name("Tutorial")
+  msg({
+    "That's all for this demo of Talkies.lua!",
+    "You can find the source code at " ..
+    "https://github.com/erogodic/Talkies",
+    "Goodbye. See ya around!"
+  })
+end)
+:defineAttributes({
+  'name',
+  'config',
+})
+:addMacro('selectedColor', function(item)
+  if item == "Red" then
+    love.graphics.setBackgroundColor(0.5, 0, 0)
+  elseif item == "Blue" then
+    love.graphics.setBackgroundColor(0, 0, 0.5)
+  elseif item == "Green" then
+    love.graphics.setBackgroundColor(0, 0.5, 0)
+  end
+  local lastName = get('name')
+  name("")
+  msg("You picked " .. item .. "!")
+  name(lastName) -- now display saved name
+end)
+
+
+local function nextMessage()
+  local node = script:next()
+  displayMessageNode(node)
+end
+
+local function selectOption(selection)
+  local node = script:select(selection)
+  displayMessageNode(node)
+end
+
+displayMessageNode = function(node)
+  if node == nil then
+    return -- Erogodic script is over.
+  end
+
+  local config = {}
+  if node.config ~= nil then
+    for k, v in pairs(node.config) do
+      config[k] = v
+    end
+  end
+  if node.options then
+    config.options = {}
+    for i, opt in ipairs(node.options) do
+      local onSelect = function()
+        selectOption(opt)
+      end
+      config.options[i] = {opt, onSelect}
+    end
+  else
+    config.oncomplete = nextMessage
+  end
+  Talkies.say(node.name, node.msg, config)
+end
+
+function Example2.load()
+  Talkies.titleColor = {1, 0.5, 0.5, 0.8}
+  Talkies.titleBackgroundColor = {1, 1, 1, 0.2}
+  Talkies.titleBorderColor = {1, 1, 1, 0.5}
+  Talkies.messageColor = {0.7, 0.7, 1, 0.9}
+  Talkies.messageBackgroundColor = {0.5, 0.5, 1, 0.1}
+  Talkies.messageBorderColor = {0.5, 0.5, 1, 1}
+  Talkies.indicatorCharacter  = " ⊲" -- or ⊳
+  Talkies.optionCharacter = "▶"
+  Talkies.thickness = 2
+  Talkies.rounding = 20
+  Talkies.padding = 7
+  Talkies.textSpeed = 'medium'
+    -- The FontStruction “Pixel UniCode” (https://fontstruct.com/fontstructions/show/908795)
+  -- by “ivancr72” is licensed under a Creative Commons Attribution license
+  -- (http://creativecommons.org/licenses/by/3.0/)
+  Talkies.font = love.graphics.newFont("example2/assets/fonts/PixelUniCode.ttf", 32)
+  -- Add font fallbacks for Japanese characters
+  Talkies.font:setFallbacks(love.graphics.newFont("example2/assets/fonts/JPfallback.ttf", 32))
+
+  -- Audio from bfxr (https://www.bfxr.net/)
+  sndTalk = love.audio.newSource("example2/assets/sfx/talk.wav", "static")
+  sndTalk:setVolume(0.3)
+  sndType = love.audio.newSource("example2/assets/sfx/typeSound.wav", "static")
+  sndType:setVolume(0.2)
+  Talkies.talkSound = sndType
+  Talkies.optionOnSelectSound = love.audio.newSource("example2/assets/sfx/optionSelect.wav", "static")
+  Talkies.optionOnSelectSound:setVolume(0.2)
+  Talkies.optionSwitchSound = love.audio.newSource("example2/assets/sfx/optionSwitch.wav", "static")
+  Talkies.optionSwitchSound:setVolume(0.2)
+  imgAvatar = love.graphics.newImage("example2/assets/Obey_Me.png")
+
+  love.graphics.setBackgroundColor(0.0, 0.2, 0.2)
+
+  nextMessage()
+end
+
+function Example2.update(dt)
+  Talkies.update(dt)
+end
+
+function Example2.draw()
+  if Talkies.isOpen() == false then
+    love.graphics.print('<Game Over>', 20, 20)
+  else
+    love.graphics.print(
+      "Talkies demo" ..
+      "'spacebar': Cycle through messages \n" ..
+      "'c': Clear all messages \n" ..
+      "'m': Add a single message to the queue \n", 10, 100)
+    Talkies.draw()
+  end
+end
+
+function Example2.keypressed(key)
+  if key == "c" then Talkies.clearMessages()
+  elseif key == "m" then Talkies.say("Title", {"Message one", "two", "and three..."})
+  elseif key == "escape" then love.event.quit()
+  elseif key == "space" then Talkies.onAction()
+  elseif key == "return" then Talkies.onAction()
+  elseif key == "up" then Talkies.prevOption()
+  elseif key == "down" then Talkies.nextOption()
+  end
+end
+
+return Example2

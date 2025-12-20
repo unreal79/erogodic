@@ -1,0 +1,97 @@
+local Ero = require 'libs.erogodic'
+local Example1 = {}
+local Talkies = require 'libs.talkies'
+Talkies.titleColor = {1, 0.5, 0.5, 0.8}
+Talkies.titleBackgroundColor = {1, 1, 1, 0.2}
+Talkies.titleBorderColor = {1, 1, 1, 0.5}
+Talkies.messageColor = {0.7, 0.7, 1, 0.9}
+Talkies.messageBackgroundColor = {0.5, 0.5, 1, 0.1}
+Talkies.messageBorderColor = {0.5, 0.5, 1, 1}
+Talkies.textSpeed = 'medium'
+Talkies.font = love.graphics.newFont(24)
+local displayMessageNode
+
+
+local script = Ero(function()
+  name "Shopkeeper"
+  msg "Thank you for rescuing my beloved tomboyish daughter!"
+  local baklava = option "Delicious Baklava"
+  local hamster = option "Loyal Hamster"
+  menu "Select your reward"
+  if selection(baklava) then
+    giveItem("Baklava")
+  elseif selection(hamster) then
+    giveItem("Hamster")
+  end
+  msg "Also, take this powerful weapon!"
+  giveItem("Slightly-Rusted Dwarfbane +3")
+  msg "Farewell!"
+end)
+  :defineAttributes({
+    'name',
+  })
+  :addMacro('giveItem', function(item)
+    local lastName = get('name')
+    name ""
+    msg("You got the " .. item .. "!")
+    name(lastName)
+  end)
+
+local function nextMessage()
+  local node = script:next()
+  displayMessageNode(node)
+end
+
+local function selectOption(selection)
+  local node = script:select(selection)
+  displayMessageNode(node)
+end
+
+displayMessageNode = function(node)
+  if node == nil then
+    return -- Erogodic script is over.
+  end
+
+  local config = {}
+  if node.options then
+    config.options = {}
+    for i, opt in ipairs(node.options) do
+      local onSelect = function()
+        selectOption(opt)
+      end
+      config.options[i] = {opt, onSelect}
+    end
+  else
+    config.oncomplete = nextMessage
+  end
+  Talkies.say(node.name, node.msg, config)
+end
+
+function Example1.load()
+  nextMessage()
+end
+
+function Example1.update(dt)
+  Talkies.update(dt)
+end
+
+function Example1.draw()
+  Talkies.draw()
+  if Talkies.isOpen() == false then
+    love.graphics.print('<Script Over>', 20, 20)
+  end
+end
+
+function Example1.keypressed(key)
+  if key == 'space' or key == 'return' or key == 'e' or key == 'z' then
+    Talkies.onAction()
+  elseif key == 'up' or key == 'w' then
+    Talkies.prevOption()
+  elseif key == 'down' or key == 's' then
+    Talkies.nextOption()
+  elseif key == 'escape' then
+    love.event.push('quit')
+  end
+end
+
+return Example1

@@ -1,0 +1,10 @@
+.git/
+.vscode/
+
+# luarocks build files
+*.src.rock
+
+# Precompiled Headers
+*.gch
+*.pch
+

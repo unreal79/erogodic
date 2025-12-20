@@ -1,6 +1,6 @@
 require 'busted'
 
-local Ero = require 'erogodic'
+local Ero = require 'libs.erogodic'
 
 describe('Terebi:', function()
   describe('When executing script', function()

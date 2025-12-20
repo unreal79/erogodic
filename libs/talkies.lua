@@ -67,9 +67,9 @@ end
 local Typer = {}
 function Typer.new(msg, speed)
   local timeToType = parseSpeed(speed)
-  
+
   local strip = string.gsub(msg, "\n","")
-  
+
   return setmetatable({
     msg = msg, complete = false, paused = false,
     timer = timeToType, max = timeToType, position = 1, strip = strip,
@@ -93,22 +93,22 @@ end
 
 function Typer:update(dt)
   local typed = false
-  
+
   if self.complete then return typed end
   if not self.paused then
     self.timer = self.timer - dt
     while not self.paused and not self.complete and self.timer <= 0 do
       typed = utf8.sub(self.strip, self.position, self.position) ~= " "
       self.position = self.position + 1
-      
+
       self.timer = self.timer + self.max
-      
+
       self.complete = self.position >= utf8.len(self.strip)
-      
+
       self.paused = utf8.sub(self.strip, self.position + 1, self.position + 2) == "--"
     end
   end
-  
+
   return typed
 end
 
@@ -124,17 +124,17 @@ local Talkies = {
   talkSound               = nil,
   optionSwitchSound       = nil,
   inlineOptions           = true,
-  
+
   titleColor              = {1, 1, 1},
   titleBackgroundColor    = nil,
   titleBorderColor        = nil,
   messageColor            = {1, 1, 1},
   messageBackgroundColor  = {0, 0, 0, 0.8},
   messageBorderColor      = nil,
-  
+
   rounding                = 0,
   thickness               = 0,
-  
+
   textSpeed               = 1 / 60,
   font                    = love.graphics.newFont(),
 
@@ -156,7 +156,7 @@ function Talkies.say(title, messages, config)
   end
 
   msgFifo = Fifo.new()
-  
+
   for i=1, #messages do
     msgFifo:push(Typer.new(messages[i], config.textSpeed or Talkies.textSpeed))
   end
@@ -192,16 +192,16 @@ function Talkies.say(title, messages, config)
     showOptions = function(dialog) return dialog.messages:len() == 1 and type(dialog.options) == "table" end,
     isShown     = function(dialog) return Talkies.dialogs:peek() == dialog end
   }
-  
+
   newDialog.messageBackgroundColor = config.messageBackgroundColor or Talkies.messageBackgroundColor
   newDialog.titleBackgroundColor = config.titleBackgroundColor or Talkies.titleBackgroundColor or newDialog.messageBackgroundColor
-  
+
   newDialog.messageColor = config.messageColor or Talkies.messageColor
   newDialog.titleColor = config.titleColor or Talkies.titleColor or newDialog.messageColor
-  
+
   newDialog.messageBorderColor = config.messageBorderColor or Talkies.messageBorderColor or newDialog.messageBackgroundColor
   newDialog.titleBorderColor = config.titleBorderColor or Talkies.titleBorderColor or newDialog.messageBorderColor
-  
+
   Talkies.dialogs:push(newDialog)
   if Talkies.dialogs:len() == 1 then
     Talkies.dialogs:peek():onstart()
@@ -273,7 +273,7 @@ function Talkies.draw()
   end
 
   local windowWidth, windowHeight = getDimensions()
-  
+
   love.graphics.setLineWidth(currentDialog.thickness)
 
   -- message box
@@ -299,7 +299,7 @@ function Talkies.draw()
     local titleBoxH = currentDialog.fontHeight+currentDialog.padding
     local titleBoxY = boxY-titleBoxH-(currentDialog.padding/2)
     local titleX, titleY = boxX + currentDialog.padding, titleBoxY + 2
-    
+
     -- Message title
     love.graphics.setColor(currentDialog.titleBackgroundColor)
     love.graphics.rectangle("fill", boxX, titleBoxY, titleBoxW, titleBoxH, currentDialog.rounding, currentDialog.rounding)
@@ -331,22 +331,22 @@ function Talkies.draw()
   love.graphics.setColor(currentDialog.messageColor)
   local textW = boxW - imgW - (4 * currentDialog.padding)
   local textH = currentDialog.font:getHeight()
-  
+
   local _, modmsg = currentDialog.font:getWrap(currentMessage.msg, textW)
-  
+
   local tempPosition = 1
   local lineNum = 1
-  
+
   while tempPosition < currentMessage.position and utf8.len(currentMessage.strip) > 0 do
     local displayLine = modmsg[lineNum]
-    
+
     local positionAdd = math.min(currentMessage.position - tempPosition + 1, utf8.len(displayLine))
     tempPosition = tempPosition + positionAdd
-    
+
     local display = utf8.sub(displayLine, 1, positionAdd)
-    
+
     love.graphics.print(display, textX, textY + textH * (lineNum - 1))
-    
+
     lineNum = lineNum + 1
   end
 
@@ -364,26 +364,26 @@ function Talkies.draw()
         optionsY+((currentDialog.optionIndex-1)*currentDialog.fontHeight))
     else
       local optionWidth = 0
-      
+
       local optionText = ""
       for k, option in pairs(currentDialog.options) do
         local newText = (currentDialog.optionIndex == k and currentDialog.optionCharacter or " ") .. " " .. option[1]
         optionWidth = math.max(optionWidth, currentDialog.font:getWidth(newText) )
         optionText = optionText .. newText .. "\n"
       end
-      
+
       local optionsH = (currentDialog.font:getHeight() * #currentDialog.options)
       local optionsX = math.floor((windowWidth / 2) - (optionWidth / 2))
       local optionsY = math.floor((windowHeight / 3) - (optionsH / 2))
-      
+
       love.graphics.setColor(currentDialog.messageBackgroundColor)
       love.graphics.rectangle("fill", optionsX - currentDialog.padding, optionsY - currentDialog.padding, optionWidth + currentDialog.padding * 2, optionsH + currentDialog.padding * 2, currentDialog.rounding, currentDialog.rounding)
-      
+
       if currentDialog.thickness > 0 then
         love.graphics.setColor(currentDialog.messageBorderColor)
         love.graphics.rectangle("line", optionsX - currentDialog.padding, optionsY - currentDialog.padding, optionWidth + currentDialog.padding * 2, optionsH + currentDialog.padding * 2, currentDialog.rounding, currentDialog.rounding)
       end
-      
+
       love.graphics.setColor(currentDialog.messageColor)
       love.graphics.print(optionText, optionsX, optionsY)
     end
