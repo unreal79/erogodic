@@ -24,8 +24,13 @@ end)
     name(lastName)
   end)
 
-local Talkies = require 'demo.talkies'
-Talkies.backgroundColor = {1, 1, 1, 0.2}
+local Talkies = require 'libs.talkies'
+Talkies.titleColor = {1, 0.5, 0.5, 0.8}
+Talkies.titleBackgroundColor = {1, 1, 1, 0.2}
+Talkies.titleBorderColor = {1, 1, 1, 0.5}
+Talkies.messageColor = {0.7, 0.7, 1, 0.9}
+Talkies.messageBackgroundColor = {0.5, 0.5, 1, 0.1}
+Talkies.messageBorderColor = {0.5, 0.5, 1, 1}
 Talkies.textSpeed = 'medium'
 Talkies.font = love.graphics.newFont(24)
 
