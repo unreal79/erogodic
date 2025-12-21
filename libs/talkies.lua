@@ -1,11 +1,12 @@
 --
--- talkies
+-- talkies v.0.0.2
 --
 -- Copyright (c) 2017 twentytwoo, tanema
 --
 -- This library is free software; you can redistribute it and/or modify it
 -- under the terms of the MIT license. See LICENSE for details.
---
+
+
 ---@class utf8lib
 local utf8 = require("utf8")
 
@@ -30,6 +31,7 @@ function utf8.sub(str, start, stop)
     return string.sub(str, start, stop)
 end
 
+-- Play a sound with optional pitch shift
 local function playSound(sound, pitch)
     if type(sound) == "userdata" then
         sound:setPitch(pitch or 1)
@@ -37,29 +39,47 @@ local function playSound(sound, pitch)
     end
 end
 
+-- Parse speed setting into time per character
 local function parseSpeed(speed)
-    if speed == "fast" then return 0.01
-    elseif speed == "medium" then return 0.04
-    elseif speed == "slow" then return 0.08
+    if speed == "fast" then
+        return 0.01
+    elseif speed == "medium" then
+        return 0.04
+    elseif speed == "slow" then
+        return 0.08
     else
         assert(tonumber(speed), "setSpeed() - Expected number, got " .. tostring(speed))
         return speed
     end
 end
 
-local msgFifo = nil
+local msgFifo = nil -- Message FIFO
+
+-- Fifo class
 local Fifo = {}
-function Fifo.new() return setmetatable({ first = 1, last = 0 }, { __index = Fifo }) end
 
-function Fifo:peek() return self[self.first] end
+-- Create a new Fifo instance
+function Fifo.new()
+    return setmetatable({ first = 1, last = 0 }, { __index = Fifo })
+end
 
-function Fifo:len() return (self.last + 1) - self.first end
+-- Peek at the first value in the fifo without removing it
+function Fifo:peek()
+    return self[self.first]
+end
 
+-- Get the number of items in the fifo
+function Fifo:len()
+    return (self.last + 1) - self.first
+end
+
+-- Add a value to the end of the fifo
 function Fifo:push(value)
     self.last = self.last + 1
     self[self.last] = value
 end
 
+-- Remove and return the first value from the fifo
 function Fifo:pop()
     if self.first > self.last then return end
 
@@ -69,7 +89,10 @@ function Fifo:pop()
     return value
 end
 
+-- Typer class
 local Typer = {}
+
+-- Create a new Typer instance
 function Typer.new(msg, speed)
     local timeToType = parseSpeed(speed)
 
@@ -86,6 +109,7 @@ function Typer.new(msg, speed)
     }, { __index = Typer })
 end
 
+-- Resume typing after a pause
 function Typer:resume()
     if not self.paused then return end
 
@@ -94,6 +118,7 @@ function Typer:resume()
     self.paused = false
 end
 
+-- Finish typing the message immediately
 function Typer:finish()
     if self.complete then return end
 
@@ -103,6 +128,8 @@ function Typer:finish()
     self.complete = true
 end
 
+-- Update the typer
+--- Returns true if currently busy typing a character
 function Typer:update(dt)
     local typed = false
 
@@ -125,6 +152,7 @@ function Typer:update(dt)
     return typed
 end
 
+-- Talkies settings table
 local Talkies = {
     _VERSION               = '0.0.2',
     _URL                   = 'https://github.com/tanema/talkies',
@@ -165,6 +193,7 @@ local Talkies = {
     height                 = nil,
 }
 
+-- Create and show a new dialog
 function Talkies.say(title, messages, config)
     config = config or {}
     if type(messages) ~= "table" then
@@ -233,6 +262,7 @@ function Talkies.say(title, messages, config)
     return newDialog
 end
 
+-- Update the dialog system
 function Talkies.update(dt)
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
@@ -259,6 +289,7 @@ function Talkies.update(dt)
     end
 end
 
+-- Advance to the next message
 function Talkies.advanceMsg()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
@@ -276,10 +307,12 @@ function Talkies.advanceMsg()
     currentDialog.messages:pop()
 end
 
+-- Check if a dialog is currently open
 function Talkies.isOpen()
     return Talkies.dialogs:peek() ~= nil
 end
 
+-- Draw the current dialog
 function Talkies.draw()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
@@ -430,7 +463,6 @@ function Talkies.draw()
             end
 
             love.graphics.setColor(currentDialog.messageColor)
-                        love.graphics.setColor(currentDialog.selectedTextColor)
             love.graphics.print(optionText, optionsX, optionsY)
         end
     end
@@ -447,32 +479,50 @@ function Talkies.draw()
     love.graphics.setColor(1, 1, 1, 1)
 end
 
+-- Select previous option
 function Talkies.prevOption()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil or not currentDialog:showOptions() then return end
 
     currentDialog.optionIndex = currentDialog.optionIndex - 1
-    if currentDialog.optionIndex < 1 then currentDialog.optionIndex = #currentDialog.options end
+    if currentDialog.optionIndex < 1 then
+        currentDialog.optionIndex = #currentDialog.options
+    end
     playSound(currentDialog.optionSwitchSound)
 end
 
+-- Select next option
 function Talkies.nextOption()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil or not currentDialog:showOptions() then return end
 
     currentDialog.optionIndex = currentDialog.optionIndex + 1
-    if currentDialog.optionIndex > #currentDialog.options then currentDialog.optionIndex = 1 end
+    if currentDialog.optionIndex > #currentDialog.options then
+        currentDialog.optionIndex = 1
+    end
     playSound(currentDialog.optionSwitchSound)
 end
 
+-- Select option by index (1-based)
+function Talkies.selectOption(index)
+    local currentDialog = Talkies.dialogs:peek()
+    if currentDialog == nil or not currentDialog:showOptions() then return end
+
+    currentDialog.optionIndex = index
+    playSound(currentDialog.optionSwitchSound)
+end
+
+-- Handle action input (advance message or select option)
 function Talkies.onAction()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
 
     local currentMessage = currentDialog.messages:peek()
 
-    if currentMessage.paused then currentMessage:resume()
-    elseif not currentMessage.complete then currentMessage:finish()
+    if currentMessage.paused then
+        currentMessage:resume()
+    elseif not currentMessage.complete then
+        currentMessage:finish()
     else
         if currentDialog:showOptions() then
             currentDialog.options[currentDialog.optionIndex][2]() -- Execute the selected function
@@ -482,6 +532,7 @@ function Talkies.onAction()
     end
 end
 
+-- Clear all messages
 function Talkies.clearMessages()
     Talkies.dialogs = Fifo.new()
 end
