@@ -47,6 +47,7 @@ local function parseSpeed(speed)
     end
 end
 
+local msgFifo = nil
 local Fifo = {}
 function Fifo.new() return setmetatable({ first = 1, last = 0 }, { __index = Fifo }) end
 
@@ -61,6 +62,7 @@ end
 
 function Fifo:pop()
     if self.first > self.last then return end
+
     local value = self[self.first]
     self[self.first] = nil
     self.first = self.first + 1
@@ -86,6 +88,7 @@ end
 
 function Typer:resume()
     if not self.paused then return end
+
     self.msg = self.msg:gsub("%-%-", "", 1)
     self.strip = self.strip:gsub("%-%-", "", 1)
     self.paused = false
@@ -93,6 +96,7 @@ end
 
 function Typer:finish()
     if self.complete then return end
+
     self.msg = self.msg:gsub("%-%-", "")
     self.strip = self.strip:gsub("%-%-", "")
     self.position = utf8.len(self.strip)
@@ -103,6 +107,7 @@ function Typer:update(dt)
     local typed = false
 
     if self.complete then return typed end
+
     if not self.paused then
         self.timer = self.timer - dt
         while not self.paused and not self.complete and self.timer <= 0 do
@@ -121,7 +126,7 @@ function Typer:update(dt)
 end
 
 local Talkies = {
-    _VERSION               = '0.0.1',
+    _VERSION               = '0.0.2',
     _URL                   = 'https://github.com/tanema/talkies',
     _DESCRIPTION           = 'A simple messagebox system for LÖVE',
 
@@ -133,12 +138,15 @@ local Talkies = {
     optionSwitchSound      = nil,
     inlineOptions          = true,
 
-    titleColor             = { 1, 1, 1 },
+    titleColor             = { 1, 1, 1, 1 },
     titleBackgroundColor   = nil,
     titleBorderColor       = nil,
-    messageColor           = { 1, 1, 1 },
+    messageColor           = { 1, 1, 1, 1 },
     messageBackgroundColor = { 0, 0, 0, 0.8 },
     messageBorderColor     = nil,
+    selectedTextColor       = { 0.2, 0.2, 0.2, 0.8 },
+    selectedBackgroundColor = { 1, 1, 1, 0.8 },
+    selectedWidth           = 300,
 
     rounding               = 0,
     thickness              = 0,
@@ -212,6 +220,11 @@ function Talkies.say(title, messages, config)
         newDialog.messageBackgroundColor
     newDialog.titleBorderColor = config.titleBorderColor or Talkies.titleBorderColor or newDialog.messageBorderColor
 
+    newDialog.selectedTextColor = config.selectedTextColor or Talkies.selectedTextColor
+    newDialog.selectedBackgroundColor = config.selectedBackgroundColor or Talkies.selectedBackgroundColor
+    newDialog.selectedWidth = config.selectedWidth or Talkies.selectedWidth
+
+
     Talkies.dialogs:push(newDialog)
     if Talkies.dialogs:len() == 1 then
         Talkies.dialogs:peek():onstart()
@@ -223,6 +236,7 @@ end
 function Talkies.update(dt)
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
+
     local currentMessage = currentDialog.messages:peek()
 
     if currentMessage.paused or currentMessage.complete then
@@ -248,6 +262,7 @@ end
 function Talkies.advanceMsg()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
+
     currentDialog:onmessage(currentDialog.messages:len() - 1)
     if currentDialog.messages:len() == 1 then
         Talkies.dialogs:pop()
@@ -366,11 +381,23 @@ function Talkies.draw()
     if currentDialog:showOptions() and currentMessage.complete then
         if currentDialog.inlineOptions then
             local optionsY = textY + currentDialog.font:getHeight() * #modmsg
+            love.graphics.setColor(currentDialog.selectedBackgroundColor)
+            love.graphics.rectangle("fill",
+                textX+currentDialog.padding-1,
+                optionsY+(currentDialog.optionIndex-1)*currentDialog.fontHeight,
+                currentDialog.selectedWidth,
+                currentDialog.fontHeight)
             local optionLeftPad = currentDialog.font:getWidth(currentDialog.optionCharacter .. " ")
             for k, option in pairs(currentDialog.options) do
+                if k == currentDialog.optionIndex then
+                    love.graphics.setColor(currentDialog.selectedTextColor)
+                else
+                    love.graphics.setColor(currentDialog.messageColor)
+                end
                 love.graphics.print(option[1], optionLeftPad + textX + currentDialog.padding,
                     optionsY + ((k - 1) * currentDialog.fontHeight))
             end
+            love.graphics.setColor(currentDialog.selectedTextColor)
             love.graphics.print(
                 currentDialog.optionCharacter .. " ",
                 textX + currentDialog.padding,
@@ -403,6 +430,7 @@ function Talkies.draw()
             end
 
             love.graphics.setColor(currentDialog.messageColor)
+                        love.graphics.setColor(currentDialog.selectedTextColor)
             love.graphics.print(optionText, optionsX, optionsY)
         end
     end
@@ -422,6 +450,7 @@ end
 function Talkies.prevOption()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil or not currentDialog:showOptions() then return end
+
     currentDialog.optionIndex = currentDialog.optionIndex - 1
     if currentDialog.optionIndex < 1 then currentDialog.optionIndex = #currentDialog.options end
     playSound(currentDialog.optionSwitchSound)
@@ -430,6 +459,7 @@ end
 function Talkies.nextOption()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil or not currentDialog:showOptions() then return end
+
     currentDialog.optionIndex = currentDialog.optionIndex + 1
     if currentDialog.optionIndex > #currentDialog.options then currentDialog.optionIndex = 1 end
     playSound(currentDialog.optionSwitchSound)
@@ -438,6 +468,7 @@ end
 function Talkies.onAction()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
+
     local currentMessage = currentDialog.messages:peek()
 
     if currentMessage.paused then currentMessage:resume()
