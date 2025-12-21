@@ -13,6 +13,14 @@ function love.keypressed(key)
   Example.keypressed(key)
 end
 
+function love.mousemoved(x, y)
+  Example.mousemoved(x, y)
+end
+
+function love.mousepressed(x, y, button)
+  Example.mousepressed(x, y, button)
+end
+
 function love.draw()
   Example.draw()
 end

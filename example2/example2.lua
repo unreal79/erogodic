@@ -66,6 +66,9 @@ local script = Ero(function()
   msg("アイ・ドーント・ノー・ジャパニーズ・ホープフリー・ジス・トランズレーター・ダズント・" ..
       "メス・ジス・アップ・トゥー・マッチ")
   name("Tutorial")
+  config({
+    textSpeed = "instant",
+  })
   msg({
     "That's all for this demo of Talkies.lua!",
     "You can find the source code at " ..
@@ -88,7 +91,7 @@ end)
   local lastName = get('name')
   name("")
   msg("You picked " .. item .. "!")
-  name(lastName) -- now display saved name
+  name(lastName) -- display saved name next time
 end)
 
 
@@ -102,7 +105,10 @@ local function selectOption(selection)
   displayMessageNode(node)
 end
 
+local displayMode = nil
+
 displayMessageNode = function(node)
+  displayMode = nil
   if node == nil then
     return -- Erogodic script is over.
   end
@@ -114,6 +120,7 @@ displayMessageNode = function(node)
     end
   end
   if node.options then
+    displayMode = 'options'
     config.options = {}
     for i, opt in ipairs(node.options) do
       local onSelect = function()
@@ -122,6 +129,7 @@ displayMessageNode = function(node)
       config.options[i] = {opt, onSelect}
     end
   else
+    displayMode = 'message'
     config.oncomplete = nextMessage
   end
   Talkies.say(node.name, node.msg, config)
@@ -136,11 +144,14 @@ function Example2.load()
   Talkies.messageBorderColor = {0.5, 0.5, 1, 1}
   Talkies.indicatorCharacter  = " ⊲" -- or ⊳
   Talkies.optionCharacter = "▶"
+  Talkies.selectedTextColor = {0.2, 0.2, 0.5, 0.8}
+  Talkies.selectedBackgroundColor = {1, 1, 0, 0.8}
+  Talkies.selectedWidth = 500
   Talkies.thickness = 2
   Talkies.rounding = 20
   Talkies.padding = 7
   Talkies.textSpeed = 'medium'
-    -- The FontStruction “Pixel UniCode” (https://fontstruct.com/fontstructions/show/908795)
+  -- The FontStruction “Pixel UniCode” (https://fontstruct.com/fontstructions/show/908795)
   -- by “ivancr72” is licensed under a Creative Commons Attribution license
   -- (http://creativecommons.org/licenses/by/3.0/)
   Talkies.font = love.graphics.newFont("example2/assets/fonts/PixelUniCode.ttf", 32)
@@ -149,14 +160,14 @@ function Example2.load()
 
   -- Audio from bfxr (https://www.bfxr.net/)
   sndTalk = love.audio.newSource("example2/assets/sfx/talk.wav", "static")
-  sndTalk:setVolume(0.3)
+  sndTalk:setVolume(0.2)
   sndType = love.audio.newSource("example2/assets/sfx/typeSound.wav", "static")
-  sndType:setVolume(0.2)
+  sndType:setVolume(0.1)
   Talkies.talkSound = sndType
   Talkies.optionOnSelectSound = love.audio.newSource("example2/assets/sfx/optionSelect.wav", "static")
-  Talkies.optionOnSelectSound:setVolume(0.2)
+  Talkies.optionOnSelectSound:setVolume(0.1)
   Talkies.optionSwitchSound = love.audio.newSource("example2/assets/sfx/optionSwitch.wav", "static")
-  Talkies.optionSwitchSound:setVolume(0.2)
+  Talkies.optionSwitchSound:setVolume(0.1)
   imgAvatar = love.graphics.newImage("example2/assets/Obey_Me.png")
 
   love.graphics.setBackgroundColor(0.0, 0.2, 0.2)
@@ -173,23 +184,47 @@ function Example2.draw()
     love.graphics.print('<Game Over>', 20, 20)
   else
     love.graphics.print(
-      "Talkies demo" ..
+      "Talkies demo (with mouse support) \n" ..
+      "'LMB': Select option (if present) \n" ..
+      "'RMB': Advance message \n" ..
       "'spacebar': Cycle through messages \n" ..
-      "'c': Clear all messages \n" ..
-      "'m': Add a single message to the queue \n", 10, 100)
+      "'enter': Select option (if present) \n" ..
+      "'up/down': Switch options (if present) \n",
+      10, 100)
     Talkies.draw()
   end
 end
 
 function Example2.keypressed(key)
-  if key == "c" then Talkies.clearMessages()
-  elseif key == "m" then Talkies.say("Title", {"Message one", "two", "and three..."})
-  elseif key == "escape" then love.event.quit()
-  elseif key == "space" then Talkies.onAction()
-  elseif key == "return" then Talkies.onAction()
+  if key == "escape" then love.event.quit()
+  elseif key == "space" and displayMode == 'message' then Talkies.onAction()
+  elseif key == "return" and displayMode == 'options' then Talkies.onAction()
   elseif key == "up" then Talkies.prevOption()
   elseif key == "down" then Talkies.nextOption()
   end
 end
+
+function Example2.mousemoved(x, y)
+  local selectedOption = Talkies.optionXY(x, y)
+  if selectedOption ~= nil then
+    Talkies.selectOption(selectedOption)
+  end
+end
+
+function Example2.mousepressed(x, y, button)
+  if button == 1 then
+    local selectedOption = Talkies.optionXY(x, y)
+    if selectedOption ~= nil then
+      Talkies.selectOption(selectedOption)
+      Talkies.onAction()
+    end
+  elseif button == 2 then
+    -- Right click to advance message
+    if displayMode == 'message' then
+      Talkies.onAction()
+    end
+  end
+end
+
 
 return Example2

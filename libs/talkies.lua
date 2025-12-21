@@ -41,7 +41,9 @@ end
 
 -- Parse speed setting into time per character
 local function parseSpeed(speed)
-    if speed == "fast" then
+    if speed == "instant" then
+        return -1.0
+    elseif speed == "fast" then
         return 0.01
     elseif speed == "medium" then
         return 0.04
@@ -57,9 +59,11 @@ local msgFifo = nil -- Message FIFO
 
 -- Fifo class
 local Fifo = {}
+local optionsXYWH = {}
 
 -- Create a new Fifo instance
 function Fifo.new()
+    optionsXYWH = {}
     return setmetatable({ first = 1, last = 0 }, { __index = Fifo })
 end
 
@@ -421,6 +425,7 @@ function Talkies.draw()
                 currentDialog.selectedWidth,
                 currentDialog.fontHeight)
             local optionLeftPad = currentDialog.font:getWidth(currentDialog.optionCharacter .. " ")
+            optionsXYWH = {}
             for k, option in pairs(currentDialog.options) do
                 if k == currentDialog.optionIndex then
                     love.graphics.setColor(currentDialog.selectedTextColor)
@@ -428,7 +433,12 @@ function Talkies.draw()
                     love.graphics.setColor(currentDialog.messageColor)
                 end
                 love.graphics.print(option[1], optionLeftPad + textX + currentDialog.padding,
-                    optionsY + ((k - 1) * currentDialog.fontHeight))
+                    optionsY + (k - 1) * currentDialog.fontHeight)
+                optionsXYWH[k] = {}
+                optionsXYWH[k].x = optionLeftPad + textX + currentDialog.padding
+                optionsXYWH[k].y = optionsY + (k - 1)*currentDialog.fontHeight
+                optionsXYWH[k].w = currentDialog.selectedWidth
+                optionsXYWH[k].h = currentDialog.fontHeight
             end
             love.graphics.setColor(currentDialog.selectedTextColor)
             love.graphics.print(
@@ -504,12 +514,36 @@ function Talkies.nextOption()
 end
 
 -- Select option by index (1-based)
+---- Used in mouse handling
 function Talkies.selectOption(index)
     local currentDialog = Talkies.dialogs:peek()
-    if currentDialog == nil or not currentDialog:showOptions() then return end
+    if currentDialog == nil or not currentDialog:showOptions() or index == currentDialog.optionIndex then
+        return
+    end
 
     currentDialog.optionIndex = index
     playSound(currentDialog.optionSwitchSound)
+end
+
+-- Get option index at given x,y coordinates (or nil if none)
+---- Used in mouse handling
+function Talkies.optionXY(x, y)
+    local currentDialog = Talkies.dialogs:peek()
+    if currentDialog == nil then return nil end
+
+    local currentMessage = currentDialog.messages:peek()
+    if not currentDialog:showOptions() or not currentMessage.complete then
+        return nil
+    end
+
+    for i, option in ipairs(optionsXYWH) do
+        if x >= option.x and x < option.x + option.w
+                and y >= option.y and y < option.y + option.h then
+            return i
+        end
+    end
+
+    return nil
 end
 
 -- Handle action input (advance message or select option)
