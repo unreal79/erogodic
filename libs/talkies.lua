@@ -1,5 +1,5 @@
 --
--- talkies v.0.0.2
+-- talkies v.0.0.
 --
 -- Copyright (c) 2017 twentytwoo, tanema
 --
@@ -156,15 +156,16 @@ function Typer:update(dt)
     return typed
 end
 
--- Talkies settings table
+-- Talkies default settings table
 local Talkies = {
-    _VERSION               = '0.0.2',
-    _URL                   = 'https://github.com/tanema/talkies',
+    _VERSION               = '0.0.3',
+    _URL                   = 'https://github.com/unreal79/talkies',
     _DESCRIPTION           = 'A simple messagebox system for LÖVE',
 
     -- Theme
     indicatorCharacter     = ">",
     optionCharacter        = "-",
+    height                 = nil,
     padding                = 10,
     talkSound              = nil,
     optionSwitchSound      = nil,
@@ -194,7 +195,6 @@ local Talkies = {
     showIndicator          = false,
     dialogs                = Fifo.new(),
 
-    height                 = nil,
 }
 
 -- Create and show a new dialog
@@ -210,8 +210,6 @@ function Talkies.say(title, messages, config)
         msgFifo:push(Typer.new(messages[i], config.textSpeed or Talkies.textSpeed))
     end
 
-    local font = config.font or Talkies.font
-
     -- Insert the Talkies.new into its own instance (table)
     local newDialog = {
         title              = title or "",
@@ -223,16 +221,22 @@ function Talkies.say(title, messages, config)
         oncomplete         = config.oncomplete or function(dialog) end,
 
         -- theme
+        messageBackgroundColor = config.messageBackgroundColor or Talkies.messageBackgroundColor,
+        messageColor = config.messageColor or Talkies.messageColor,
+        selectedTextColor = config.selectedTextColor or Talkies.selectedTextColor,
+        selectedBackgroundColor = config.selectedBackgroundColor or Talkies.selectedBackgroundColor,
+        selectedWidth = config.selectedWidth or Talkies.selectedWidth,
         indicatorCharacter = config.indicatorCharacter or Talkies.indicatorCharacter,
         optionCharacter    = config.optionCharacter or Talkies.optionCharacter,
+        height             = config.height or Talkies.height,
         padding            = config.padding or Talkies.padding,
         rounding           = config.rounding or Talkies.rounding,
         thickness          = config.thickness or Talkies.thickness,
         talkSound          = config.talkSound or Talkies.talkSound,
         optionSwitchSound  = config.optionSwitchSound or Talkies.optionSwitchSound,
-        inlineOptions      = config.inlineOptions or Talkies.inlineOptions,
-        font               = font,
-        fontHeight         = font:getHeight(" "),
+        inlineOptions      = config.inlineOptions == nil and Talkies.inlineOptions or config.inlineOptions,
+        font               = config.font or Talkies.font,
+        fontHeight         = (config.font or Talkies.font):getHeight(" "),
         typedNotTalked     = config.typedNotTalked == nil and Talkies.typedNotTalked or config.typedNotTalked,
         pitchValues        = config.pitchValues or Talkies.pitchValues,
 
@@ -242,21 +246,12 @@ function Talkies.say(title, messages, config)
         isShown            = function(dialog) return Talkies.dialogs:peek() == dialog end
     }
 
-    newDialog.messageBackgroundColor = config.messageBackgroundColor or Talkies.messageBackgroundColor
     newDialog.titleBackgroundColor = config.titleBackgroundColor or Talkies.titleBackgroundColor or
         newDialog.messageBackgroundColor
-
-    newDialog.messageColor = config.messageColor or Talkies.messageColor
     newDialog.titleColor = config.titleColor or Talkies.titleColor or newDialog.messageColor
-
     newDialog.messageBorderColor = config.messageBorderColor or Talkies.messageBorderColor or
         newDialog.messageBackgroundColor
     newDialog.titleBorderColor = config.titleBorderColor or Talkies.titleBorderColor or newDialog.messageBorderColor
-
-    newDialog.selectedTextColor = config.selectedTextColor or Talkies.selectedTextColor
-    newDialog.selectedBackgroundColor = config.selectedBackgroundColor or Talkies.selectedBackgroundColor
-    newDialog.selectedWidth = config.selectedWidth or Talkies.selectedWidth
-
 
     Talkies.dialogs:push(newDialog)
     if Talkies.dialogs:len() == 1 then
@@ -321,26 +316,19 @@ function Talkies.draw()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
 
-    local currentMessage = currentDialog.messages:peek()
-
     love.graphics.push()
-    love.graphics.setDefaultFilter("nearest", "nearest")
 
-    local function getDimensions()
-        local canvas = love.graphics.getCanvas()
-        if canvas then
-            return canvas:getDimensions()
-        end
-        return love.graphics.getDimensions()
+    local windowWidth, windowHeight = love.graphics.getDimensions()
+    local canvas = love.graphics.getCanvas()
+    if canvas then
+        windowWidth, windowHeight = canvas:getDimensions()
     end
-
-    local windowWidth, windowHeight = getDimensions()
 
     love.graphics.setLineWidth(currentDialog.thickness)
 
     -- message box
     local boxW = windowWidth - (2 * currentDialog.padding)
-    local boxH = Talkies.height or (windowHeight / 3) - (2 * currentDialog.padding)
+    local boxH = currentDialog.height or (windowHeight / 3) - (2 * currentDialog.padding)
     local boxX = currentDialog.padding
     local boxY = windowHeight - (boxH + currentDialog.padding)
 
@@ -396,6 +384,7 @@ function Talkies.draw()
     local textW = boxW - imgW - (4 * currentDialog.padding)
     local textH = currentDialog.font:getHeight()
 
+    local currentMessage = currentDialog.messages:peek()
     local _, modmsg = currentDialog.font:getWrap(currentMessage.msg, textW)
 
     local tempPosition = 1
@@ -403,28 +392,24 @@ function Talkies.draw()
 
     while tempPosition < currentMessage.position and utf8.len(currentMessage.strip) > 0 do
         local displayLine = modmsg[lineNum]
-
         local positionAdd = math.min(currentMessage.position - tempPosition + 1, utf8.len(displayLine))
         tempPosition = tempPosition + positionAdd
-
         local display = utf8.sub(displayLine, 1, positionAdd)
-
         love.graphics.print(display, textX, textY + textH * (lineNum - 1))
-
         lineNum = lineNum + 1
     end
 
     -- Message options (when shown)
     if currentDialog:showOptions() and currentMessage.complete then
+        local optionLeftPad = currentDialog.font:getWidth(currentDialog.optionCharacter .. " ")
         if currentDialog.inlineOptions then
             local optionsY = textY + currentDialog.font:getHeight() * #modmsg
+
             love.graphics.setColor(currentDialog.selectedBackgroundColor)
             love.graphics.rectangle("fill",
-                textX+currentDialog.padding-1,
-                optionsY+(currentDialog.optionIndex-1)*currentDialog.fontHeight,
-                currentDialog.selectedWidth,
-                currentDialog.fontHeight)
-            local optionLeftPad = currentDialog.font:getWidth(currentDialog.optionCharacter .. " ")
+                textX+currentDialog.padding-1, optionsY+(currentDialog.optionIndex-1)*currentDialog.fontHeight,
+                currentDialog.selectedWidth, currentDialog.fontHeight)
+
             optionsXYWH = {}
             for k, option in pairs(currentDialog.options) do
                 if k == currentDialog.optionIndex then
@@ -447,13 +432,11 @@ function Talkies.draw()
                 optionsY + ((currentDialog.optionIndex - 1) * currentDialog.fontHeight))
         else
             local optionWidth = 0
-
-            local optionText = ""
             for k, option in pairs(currentDialog.options) do
-                local newText = (currentDialog.optionIndex == k and currentDialog.optionCharacter or " ") ..
+                local newText = ((currentDialog.optionIndex == k and currentDialog.optionCharacter) or " ") ..
                     " " .. option[1]
-                optionWidth = math.max(optionWidth, currentDialog.font:getWidth(newText))
-                optionText = optionText .. newText .. "\n"
+                optionWidth = math.max(optionWidth, currentDialog.font:getWidth(newText ..
+                        ((currentDialog.optionIndex ~= k and currentDialog.optionCharacter) or " ")) + 20)
             end
 
             local optionsH = (currentDialog.font:getHeight() * #currentDialog.options)
@@ -462,8 +445,8 @@ function Talkies.draw()
 
             love.graphics.setColor(currentDialog.messageBackgroundColor)
             love.graphics.rectangle("fill", optionsX - currentDialog.padding, optionsY - currentDialog.padding,
-                optionWidth + currentDialog.padding * 2, optionsH + currentDialog.padding * 2, currentDialog.rounding,
-                currentDialog.rounding)
+                optionWidth + currentDialog.padding * 2, optionsH + currentDialog.padding * 2,
+                currentDialog.rounding, currentDialog.rounding)
 
             if currentDialog.thickness > 0 then
                 love.graphics.setColor(currentDialog.messageBorderColor)
@@ -472,8 +455,24 @@ function Talkies.draw()
                     currentDialog.rounding, currentDialog.rounding)
             end
 
-            love.graphics.setColor(currentDialog.messageColor)
-            love.graphics.print(optionText, optionsX, optionsY)
+            love.graphics.setColor(currentDialog.selectedBackgroundColor)
+            love.graphics.rectangle("fill", optionsX, optionsY+(currentDialog.optionIndex-1)*currentDialog.fontHeight,
+                optionWidth, currentDialog.fontHeight)
+            optionsXYWH = {}
+            for k, option in pairs(currentDialog.options) do
+                if currentDialog.optionIndex == k then
+                    love.graphics.setColor(currentDialog.selectedTextColor)
+                else
+                    love.graphics.setColor(currentDialog.messageColor)
+                end
+                love.graphics.print(option[1], optionsX + optionLeftPad,
+                    optionsY + (k - 1) * currentDialog.fontHeight)
+                optionsXYWH[k] = {}
+                optionsXYWH[k].x = optionsX
+                optionsXYWH[k].y = optionsY + (k - 1) * currentDialog.fontHeight
+                optionsXYWH[k].w = optionWidth
+                optionsXYWH[k].h = currentDialog.fontHeight
+            end
         end
     end
 

@@ -1,46 +1,54 @@
 local Ero = require 'libs.erogodic'
-local Example2 = {}
 local Talkies = require 'libs.talkies'
-local displayMessageNode
-local imgAvatar
-local sndTalk
-local sndType
+
+local Example2 = {
+  imgAvatar = nil,
+  sndTalk = nil,
+  sndType = nil,
+  displayMode = nil,
+}
 
 local script = Ero(function()
-  name("Tutorial")
-  config({
-    image = imgAvatar,
-    titleColor = {1, 1, 1, 0.8},
-    textSpeed = "fast",
-    typedNotTalked = false,
-    talkSound = sndTalk,
-    onstart = function(dialog)
-      print("are we showing:", dialog:isShown())
-    end,
-    onmessage = function(dialog, left)
-      print(left .. " messages left in the dialog, is showing:", dialog:isShown())
-    end,
-    oncomplete = function(dialog)
-      print("are we still showing:", dialog:isShown())
-    end
-  })
-  msg({
-    "Talkies is a simple to use messagebox library.",
-    "Talkies includes:\nMultiple choices, UTF8 text, Pauses, -- Onstart/OnMessage/Oncomplete " ..
-    "functions, Complete customization, Variable typing speeds amongst other things."
-  })
+  -- name("Tutorial")
+  -- config({
+  --   image = Example2.imgAvatar,
+  --   titleColor = {1, 1, 1, 0.8},
+  --   textSpeed = "fast",
+  --   typedNotTalked = false,
+  --   talkSound = Example2.sndTalk,
+  --   height = 230,
+  --   onstart = function(dialog)
+  --     print("are we showing:", dialog:isShown())
+  --   end,
+  --   onmessage = function(dialog, left)
+  --     print(left .. " messages left in the dialog, is showing:", dialog:isShown())
+  --   end,
+  --   oncomplete = function(dialog)
+  --     print("are we still showing:", dialog:isShown())
+  --   end
+  -- })
+  -- msg({
+  --   "Talkies is a simple to use messagebox library.",
+  --   "Talkies includes:\nMultiple choices, UTF8 text, Pauses, -- Onstart/OnMessage/Oncomplete " ..
+  --   "functions, Complete customization, Variable typing speeds amongst other things."
+  -- })
 
-  name("Selecting options")
-  config({
-    textSpeed = "slow",
-    typedNotTalked = true,
-    talkSound = sndType,
-  })
-  msg("Typing sound is aligned with the text speed...")
+  -- name("Selecting options")
+  -- -- Talkies.height = 150
+  -- config({
+  --   textSpeed = "slow",
+  --   typedNotTalked = true,
+  --   talkSound = Example2.sndType,
+  --   height = 150,
+  -- })
+  -- msg("Typing sound is aligned with the text speed...")
 
   local red = option("Red")
   local blue = option("Blue")
   local green = option("Green")
+  config({
+    textSpeed = "fast",
+  })
   menu("Here's some options:")
   if selection(red) then
     selectedColor("Red")
@@ -50,12 +58,32 @@ local script = Ero(function()
     selectedColor("Green")
   end
 
+  local red = option("Red")
+  local blue = option("Blue")
+  local green = option("Green")
   config({
-    image = imgAvatar,
+    textSpeed = "fast",
+    inlineOptions = false,
+    messageColor = {0.3, 1, 0.5, 0.9},
+    messageBackgroundColor = {0.5, 0.5, 0.5, 0.9},
+    selectedTextColor = {0, 0, 0, 1},
+    selectedBackgroundColor = {0, 0, 1, 0.8},
+  })
+  menu("Here's some options again:")
+  if selection(red) then
+    selectedColor("Red")
+  elseif selection(blue) then
+    selectedColor("Blue")
+  elseif selection(green) then
+    selectedColor("Green")
+  end
+
+  config({
+    image = Example2.imgAvatar,
     titleColor = {1, 1, 1, 0.8},
     textSpeed = "fast",
     typedNotTalked = false,
-    talkSound = sndTalk,
+    talkSound = Example2.sndTalk,
   })
   name("Tutorial")
   msg("Each message is added to a \"message queue\", " ..
@@ -97,18 +125,16 @@ end)
 
 local function nextMessage()
   local node = script:next()
-  displayMessageNode(node)
+  Example2.displayMessageNode(node)
 end
 
 local function selectOption(selection)
   local node = script:select(selection)
-  displayMessageNode(node)
+  Example2.displayMessageNode(node)
 end
 
-local displayMode = nil
-
-displayMessageNode = function(node)
-  displayMode = nil
+function Example2.displayMessageNode(node)
+  Example2.displayMode = nil
   if node == nil then
     return -- Erogodic script is over.
   end
@@ -120,7 +146,7 @@ displayMessageNode = function(node)
     end
   end
   if node.options then
-    displayMode = 'options'
+    Example2.displayMode = 'options'
     config.options = {}
     for i, opt in ipairs(node.options) do
       local onSelect = function()
@@ -129,7 +155,7 @@ displayMessageNode = function(node)
       config.options[i] = {opt, onSelect}
     end
   else
-    displayMode = 'message'
+    Example2.displayMode = 'message'
     config.oncomplete = nextMessage
   end
   Talkies.say(node.name, node.msg, config)
@@ -159,16 +185,16 @@ function Example2.load()
   Talkies.font:setFallbacks(love.graphics.newFont("example2/assets/fonts/JPfallback.ttf", 32))
 
   -- Audio from bfxr (https://www.bfxr.net/)
-  sndTalk = love.audio.newSource("example2/assets/sfx/talk.wav", "static")
-  sndTalk:setVolume(0.2)
-  sndType = love.audio.newSource("example2/assets/sfx/typeSound.wav", "static")
-  sndType:setVolume(0.1)
-  Talkies.talkSound = sndType
+  Example2.sndTalk = love.audio.newSource("example2/assets/sfx/talk.wav", "static")
+  Example2.sndTalk:setVolume(0.2)
+  Example2.sndType = love.audio.newSource("example2/assets/sfx/typeSound.wav", "static")
+  Example2.sndType:setVolume(0.1)
+  Talkies.talkSound = Example2.sndType
   Talkies.optionOnSelectSound = love.audio.newSource("example2/assets/sfx/optionSelect.wav", "static")
   Talkies.optionOnSelectSound:setVolume(0.1)
   Talkies.optionSwitchSound = love.audio.newSource("example2/assets/sfx/optionSwitch.wav", "static")
   Talkies.optionSwitchSound:setVolume(0.1)
-  imgAvatar = love.graphics.newImage("example2/assets/Obey_Me.png")
+  Example2.imgAvatar = love.graphics.newImage("example2/assets/Obey_Me.png")
 
   love.graphics.setBackgroundColor(0.0, 0.2, 0.2)
 
@@ -190,15 +216,15 @@ function Example2.draw()
       "'spacebar': Cycle through messages \n" ..
       "'enter': Select option (if present) \n" ..
       "'up/down': Switch options (if present) \n",
-      10, 100)
+      50, 10)
     Talkies.draw()
   end
 end
 
 function Example2.keypressed(key)
   if key == "escape" then love.event.quit()
-  elseif key == "space" and displayMode == 'message' then Talkies.onAction()
-  elseif key == "return" and displayMode == 'options' then Talkies.onAction()
+  elseif key == "space" and Example2.displayMode == 'message' then Talkies.onAction()
+  elseif key == "return" and Example2.displayMode == 'options' then Talkies.onAction()
   elseif key == "up" then Talkies.prevOption()
   elseif key == "down" then Talkies.nextOption()
   end
@@ -220,7 +246,7 @@ function Example2.mousepressed(x, y, button)
     end
   elseif button == 2 then
     -- Right click to advance message
-    if displayMode == 'message' then
+    if Example2.displayMode == 'message' then
       Talkies.onAction()
     end
   end
