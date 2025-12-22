@@ -1,7 +1,7 @@
 --
--- talkies v.0.0.
+-- talkies v.0.0.3
 --
--- Copyright (c) 2017 twentytwoo, tanema
+-- Copyright (c) 2017-2020 twentytwoo, tanema, Talkies contributors
 --
 -- This library is free software; you can redistribute it and/or modify it
 -- under the terms of the MIT license. See LICENSE for details.
@@ -226,10 +226,10 @@ function Talkies.say(title, messages, config)
 
         -- theme
         messageBackgroundColor = config.messageBackgroundColor or Talkies.messageBackgroundColor,
-        messageColor = config.messageColor or Talkies.messageColor,
-        selectedTextColor = config.selectedTextColor or Talkies.selectedTextColor,
+        messageColor       = config.messageColor or Talkies.messageColor,
+        selectedTextColor  = config.selectedTextColor or Talkies.selectedTextColor,
         selectedBackgroundColor = config.selectedBackgroundColor or Talkies.selectedBackgroundColor,
-        selectedWidth = config.selectedWidth or Talkies.selectedWidth,
+        selectedWidth      = config.selectedWidth or Talkies.selectedWidth,
         indicatorCharacter = config.indicatorCharacter or Talkies.indicatorCharacter,
         optionCharacter    = config.optionCharacter or Talkies.optionCharacter,
         height             = config.height or Talkies.height,
@@ -367,7 +367,7 @@ function Talkies.draw()
         if currentDialog.titleOnLeft == false then
             titleBoxX = boxX + boxW - titleBoxW
         end
-        local titleX, titleY = titleBoxX + currentDialog.padding, titleBoxY + 2
+        local titleX, titleY = titleBoxX + currentDialog.padding, titleBoxY + currentDialog.padding / 2
 
         -- Message title
         love.graphics.setColor(currentDialog.titleBackgroundColor)
@@ -414,7 +414,7 @@ function Talkies.draw()
         local positionAdd = math.min(currentMessage.position - tempPosition + 1, utf8.len(displayLine))
         tempPosition = tempPosition + positionAdd
         local display = utf8.sub(displayLine, 1, positionAdd)
-        love.graphics.print(display, textX, textY + textH * (lineNum - 1))
+        love.graphics.print(display, textX, textY + textH * (lineNum - 1) + currentDialog.padding / 2)
         lineNum = lineNum + 1
     end
 
