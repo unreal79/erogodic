@@ -20,17 +20,17 @@ local script = Ero(function()
     talkSound = Example2.sndTalk,
     height = 230,
     onstart = function(dialog)
-      print("are we showing:", dialog:isShown())
+      print("Are we showing? -", dialog:isShown())
     end,
     onmessage = function(dialog, left)
-      print(left .. " messages left in the dialog, is showing:", dialog:isShown())
+      print(left .. " messages left in the dialog. Is showing? -", dialog:isShown())
     end,
     oncomplete = function(dialog)
-      print("are we still showing:", dialog:isShown())
+      print("Are we still showing? -", dialog:isShown())
     end
   })
   msg({
-    "Talkies is a simple to use messagebox library.",
+    "Talkies is a simple to use message-box library.",
     "Talkies includes:\nMultiple choices, UTF8 text, Pauses, -- Onstart/OnMessage/Oncomplete " ..
     "functions, Complete customization, Variable typing speeds amongst other things."
   })
@@ -49,7 +49,7 @@ local script = Ero(function()
   local blue = option("Blue")
   local green = option("Green")
   config({
-    textSpeed = "fast",
+    textSpeed = "slow",
   })
   menu("Here's some options:")
   if selection(red) then
@@ -125,12 +125,12 @@ end)
 end)
 
 
-local function nextMessage()
+function Example2.nextMessage()
   local node = script:next()
   Example2.displayMessageNode(node)
 end
 
-local function selectOption(selection)
+function Example2.selectOption(selection)
   local node = script:select(selection)
   Example2.displayMessageNode(node)
 end
@@ -152,13 +152,13 @@ function Example2.displayMessageNode(node)
     config.options = {}
     for i, opt in ipairs(node.options) do
       local onSelect = function()
-        selectOption(opt)
+        Example2.selectOption(opt)
       end
       config.options[i] = {opt, onSelect}
     end
   else
     Example2.displayMode = 'message'
-    config.oncomplete = nextMessage
+    config.oncomplete = Example2.nextMessage
   end
   Talkies.say(node.name, node.msg, config)
 end
@@ -200,10 +200,13 @@ function Example2.load()
 
   love.graphics.setBackgroundColor(0.0, 0.2, 0.2)
 
-  nextMessage()
+  Example2.nextMessage()
 end
 
 function Example2.update(dt)
+  if love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift") then
+    Example2.advancemessage()
+  end
   Talkies.update(dt)
 end
 
@@ -213,19 +216,35 @@ function Example2.draw()
   else
     love.graphics.print(
       "Talkies demo (with mouse support) \n" ..
-      "'LMB': Select option (if present) \n" ..
-      "'RMB': Advance message \n" ..
-      "'spacebar': Cycle through messages \n" ..
-      "'enter': Select option (if present) \n" ..
-      "'up/down': Switch options (if present) \n",
+      "  'LMB / Enter': Select option (if present) \n" ..
+      "  'RMB / Spacebar': Advance message \n" ..
+      "  'Shift': Skip through messages \n" ..
+      "  'up/down': Switch options (if present) \n",
       50, 10)
     Talkies.draw()
   end
 end
 
+-- Helper to advance message or select option based on current display mode
+function Example2.advancemessage()
+  if Example2.displayMode == 'message' then
+    Talkies.onAction()
+  elseif Example2.displayMode == 'options' then
+    local currentDialog = Talkies.dialogs:peek()
+    if currentDialog == nil then return end
+
+    local currentMessage = currentDialog.messages:peek()
+    if currentMessage.paused then
+      currentMessage:resume()
+    elseif not currentMessage.complete then
+      currentMessage:finish()
+    end
+  end
+end
+
 function Example2.keypressed(key)
   if key == "escape" then love.event.quit()
-  elseif key == "space" and Example2.displayMode == 'message' then Talkies.onAction()
+  elseif key == "space" then Example2.advancemessage()
   elseif key == "return" and Example2.displayMode == 'options' then Talkies.onAction()
   elseif key == "up" then Talkies.prevOption()
   elseif key == "down" then Talkies.nextOption()
@@ -248,9 +267,7 @@ function Example2.mousepressed(x, y, button)
     end
   elseif button == 2 then
     -- Right click to advance message
-    if Example2.displayMode == 'message' then
-      Talkies.onAction()
-    end
+    Example2.advancemessage()
   end
 end
 
