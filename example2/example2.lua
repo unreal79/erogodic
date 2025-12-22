@@ -12,7 +12,9 @@ local script = Ero(function()
   name("Tutorial")
   config({
     image = Example2.imgAvatar,
+    imageOnLeft = false,
     titleColor = {1, 1, 1, 0.8},
+    titleOnLeft = false,
     textSpeed = "fast",
     typedNotTalked = false,
     talkSound = Example2.sndTalk,

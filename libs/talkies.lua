@@ -171,9 +171,12 @@ local Talkies = {
     optionSwitchSound      = nil,
     inlineOptions          = true,
 
+    imageOnLeft            = true,
+
     titleColor             = { 1, 1, 1, 1 },
     titleBackgroundColor   = nil,
     titleBorderColor       = nil,
+    titleOnLeft            = true,
     messageColor           = { 1, 1, 1, 1 },
     messageBackgroundColor = { 0, 0, 0, 0.8 },
     messageBorderColor     = nil,
@@ -194,7 +197,6 @@ local Talkies = {
     indicatorDelay         = 3,
     showIndicator          = false,
     dialogs                = Fifo.new(),
-
 }
 
 -- Create and show a new dialog
@@ -215,6 +217,8 @@ function Talkies.say(title, messages, config)
         title              = title or "",
         messages           = msgFifo,
         image              = config.image,
+        imageOnLeft        = (config.imageOnLeft == nil and Talkies.imageOnLeft) or config.imageOnLeft,
+        titleOnLeft        = (config.titleOnLeft == nil and Talkies.titleOnLeft) or config.titleOnLeft,
         options            = config.options,
         onstart            = config.onstart or function(dialog) end,
         onmessage          = config.onmessage or function(dialog, left) end,
@@ -337,10 +341,21 @@ function Talkies.draw()
     if currentDialog.image ~= nil then
         imgScale = (boxH - (currentDialog.padding * 2)) / currentDialog.image:getHeight()
         imgW = currentDialog.image:getWidth() * imgScale
+
+        if currentDialog.imageOnLeft == false then
+            imgX = boxX + boxW - currentDialog.padding - imgW
+        end
     end
 
     -- title box
-    local textX, textY = imgX + imgW + currentDialog.padding, boxY + 4
+    local textX, textY
+    if currentDialog.image ~= nil and currentDialog.imageOnLeft ~= false then
+        textX = imgX + imgW + currentDialog.padding
+    else
+        -- no image OR image is on the right
+        textX = boxX + (2 * currentDialog.padding)
+    end
+    textY = boxY + 4
 
     love.graphics.setFont(currentDialog.font)
 
@@ -348,15 +363,19 @@ function Talkies.draw()
         local titleBoxW = currentDialog.font:getWidth(currentDialog.title) + (2 * currentDialog.padding)
         local titleBoxH = currentDialog.fontHeight + currentDialog.padding
         local titleBoxY = boxY - titleBoxH - (currentDialog.padding / 2)
-        local titleX, titleY = boxX + currentDialog.padding, titleBoxY + 2
+        local titleBoxX = boxX
+        if currentDialog.titleOnLeft == false then
+            titleBoxX = boxX + boxW - titleBoxW
+        end
+        local titleX, titleY = titleBoxX + currentDialog.padding, titleBoxY + 2
 
         -- Message title
         love.graphics.setColor(currentDialog.titleBackgroundColor)
-        love.graphics.rectangle("fill", boxX, titleBoxY, titleBoxW, titleBoxH, currentDialog.rounding,
+        love.graphics.rectangle("fill", titleBoxX, titleBoxY, titleBoxW, titleBoxH, currentDialog.rounding,
             currentDialog.rounding)
         if currentDialog.thickness > 0 then
             love.graphics.setColor(currentDialog.titleBorderColor)
-            love.graphics.rectangle("line", boxX, titleBoxY, titleBoxW, titleBoxH, currentDialog.rounding,
+            love.graphics.rectangle("line", titleBoxX, titleBoxY, titleBoxW, titleBoxH, currentDialog.rounding,
                 currentDialog.rounding)
         end
         love.graphics.setColor(currentDialog.titleColor)
