@@ -9,39 +9,39 @@ local Example2 = {
 }
 
 local script = Ero(function()
-  -- name("Tutorial")
-  -- config({
-  --   image = Example2.imgAvatar,
-  --   titleColor = {1, 1, 1, 0.8},
-  --   textSpeed = "fast",
-  --   typedNotTalked = false,
-  --   talkSound = Example2.sndTalk,
-  --   height = 230,
-  --   onstart = function(dialog)
-  --     print("are we showing:", dialog:isShown())
-  --   end,
-  --   onmessage = function(dialog, left)
-  --     print(left .. " messages left in the dialog, is showing:", dialog:isShown())
-  --   end,
-  --   oncomplete = function(dialog)
-  --     print("are we still showing:", dialog:isShown())
-  --   end
-  -- })
-  -- msg({
-  --   "Talkies is a simple to use messagebox library.",
-  --   "Talkies includes:\nMultiple choices, UTF8 text, Pauses, -- Onstart/OnMessage/Oncomplete " ..
-  --   "functions, Complete customization, Variable typing speeds amongst other things."
-  -- })
+  name("Tutorial")
+  config({
+    image = Example2.imgAvatar,
+    titleColor = {1, 1, 1, 0.8},
+    textSpeed = "fast",
+    typedNotTalked = false,
+    talkSound = Example2.sndTalk,
+    height = 230,
+    onstart = function(dialog)
+      print("are we showing:", dialog:isShown())
+    end,
+    onmessage = function(dialog, left)
+      print(left .. " messages left in the dialog, is showing:", dialog:isShown())
+    end,
+    oncomplete = function(dialog)
+      print("are we still showing:", dialog:isShown())
+    end
+  })
+  msg({
+    "Talkies is a simple to use messagebox library.",
+    "Talkies includes:\nMultiple choices, UTF8 text, Pauses, -- Onstart/OnMessage/Oncomplete " ..
+    "functions, Complete customization, Variable typing speeds amongst other things."
+  })
 
-  -- name("Selecting options")
-  -- -- Talkies.height = 150
-  -- config({
-  --   textSpeed = "slow",
-  --   typedNotTalked = true,
-  --   talkSound = Example2.sndType,
-  --   height = 150,
-  -- })
-  -- msg("Typing sound is aligned with the text speed...")
+  name("Selecting options")
+  -- Talkies.height = 150
+  config({
+    textSpeed = "slow",
+    typedNotTalked = true,
+    talkSound = Example2.sndType,
+    height = 150,
+  })
+  msg("Typing sound is aligned with the text speed...")
 
   local red = option("Red")
   local blue = option("Blue")
