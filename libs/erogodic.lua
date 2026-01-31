@@ -1,6 +1,6 @@
 --[[
 
-erogodic v3.0.0
+erogodic v3.1.0
 ===============
 
 A library for scripting branching interactive narrative by shru.
@@ -38,8 +38,10 @@ local PUSHED_SCRIPT = 'PUSHED_SCRIPT'
 local Script = {}
 local ScriptMetaTable = {__index = Script}
 
+-- Create a new Script instance.
 function Script:new(scriptFn)
   assertType(scriptFn, 'function', 'script function')
+  self._originalScriptFn = scriptFn
   self._attributes = {}
   self._selection = nil
   self._options = {}
@@ -51,6 +53,7 @@ function Script:new(scriptFn)
   return self
 end
 
+-- Initialize the script environment.
 function Script:_initEnvironment()
   local env = setmetatable({}, {__index = _G})
   function env.get(attribute)
@@ -79,6 +82,7 @@ function Script:_initEnvironment()
   self._env = env
 end
 
+-- Push a new script onto the stack.
 function Script:_pushScript(scriptFn, ...)
   setfenv(scriptFn, self._env)
   local scriptCoroutine = coroutine.create(scriptFn, ...)
@@ -88,6 +92,7 @@ function Script:_pushScript(scriptFn, ...)
   table.insert(self._argsStack, self._currentArgs)
 end
 
+-- Pop the current script off the stack.
 function Script:_popScript()
   table.remove(self._scriptStack)
   table.remove(self._currentArgs)
@@ -96,6 +101,7 @@ function Script:_popScript()
   self._currentArgs   = (len >= 1) and self._argsStack[len]   or nil
 end
 
+-- Yield a node back to the caller.
 function Script:_yield(node)
   for k, v in pairs(self._attributes) do
     node[k] = v
@@ -103,6 +109,7 @@ function Script:_yield(node)
   coroutine.yield(node)
 end
 
+-- Add a macro function that can be called from the script.
 function Script:addMacro(name, fn)
   assertType(name, 'string', 'macro name')
   assertType(fn, 'function', 'macro function')
@@ -113,6 +120,7 @@ function Script:addMacro(name, fn)
   return self
 end
 
+-- Define attributes that can be set in the script.
 function Script:defineAttributes(attributeNames)
   assertType(attributeNames, 'table', 'attributeNames')
   for _, attrName in ipairs(attributeNames) do
@@ -124,6 +132,7 @@ function Script:defineAttributes(attributeNames)
   return self
 end
 
+-- Extend the script environment with additional variables/functions.
 function Script:extendEnvironment(t)
   assertType(t, 'table', 'environment table')
   for k, v in pairs(t) do
@@ -132,6 +141,7 @@ function Script:extendEnvironment(t)
   return self
 end
 
+-- Select an option from the current menu.
 function Script:select(selection)
   for _, option in ipairs(self._options) do
     if option == selection then
@@ -170,8 +180,21 @@ function Script:next()
   return self._currentNode
 end
 
+-- Returns true if there are more nodes to process.
 function Script:hasNext()
   return self._currentScript ~= nil and coroutine.status(self._currentScript) == 'suspended'
+end
+
+-- Restart the script from the beginning.
+function Script:restart()
+  self._attributes = {}
+  self._selection = nil
+  self._options = {}
+  self._onMenu = false
+  self._currentNode = nil
+  self._scriptStack = {}
+  self._argsStack = {}
+  self:_pushScript(self._originalScriptFn)
 end
 
 return function(...)

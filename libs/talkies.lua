@@ -1,5 +1,5 @@
 --
--- talkies v.0.0.3
+-- talkies v.0.1.0
 --
 -- Copyright (c) 2017-2020 twentytwoo, tanema, Talkies contributors
 --
@@ -217,15 +217,15 @@ function Talkies.say(title, messages, config)
         title              = title or "",
         messages           = msgFifo,
         image              = config.image,
-        imageOnLeft        = (config.imageOnLeft == nil and Talkies.imageOnLeft) or config.imageOnLeft,
-        titleOnLeft        = (config.titleOnLeft == nil and Talkies.titleOnLeft) or config.titleOnLeft,
+        imageOnLeft        = config.imageOnLeft == nil and Talkies.imageOnLeft or config.imageOnLeft,
+        titleOnLeft        = config.titleOnLeft == nil and Talkies.titleOnLeft or config.titleOnLeft,
         options            = config.options,
         onstart            = config.onstart or function(dialog) end,
         onmessage          = config.onmessage or function(dialog, left) end,
         oncomplete         = config.oncomplete or function(dialog) end,
 
         -- theme
-        messageBackgroundColor = config.messageBackgroundColor or Talkies.messageBackgroundColor,
+        messageBackgroundColor = config.messageBackgroundColor == nil and Talkies.messageBackgroundColor or config.messageBackgroundColor,
         messageColor       = config.messageColor or Talkies.messageColor,
         selectedTextColor  = config.selectedTextColor or Talkies.selectedTextColor,
         selectedBackgroundColor = config.selectedBackgroundColor or Talkies.selectedBackgroundColor,
@@ -236,7 +236,7 @@ function Talkies.say(title, messages, config)
         padding            = config.padding or Talkies.padding,
         rounding           = config.rounding or Talkies.rounding,
         thickness          = config.thickness or Talkies.thickness,
-        talkSound          = config.talkSound or Talkies.talkSound,
+        talkSound          = config.talkSound == nil and Talkies.talkSound or config.talkSound,
         optionSwitchSound  = config.optionSwitchSound or Talkies.optionSwitchSound,
         inlineOptions      = config.inlineOptions == nil and Talkies.inlineOptions or config.inlineOptions,
         font               = config.font or Talkies.font,
@@ -320,13 +320,15 @@ function Talkies.draw()
     local currentDialog = Talkies.dialogs:peek()
     if currentDialog == nil then return end
 
-    love.graphics.push()
+    -- love.graphics.push()
 
-    local windowWidth, windowHeight = love.graphics.getDimensions()
-    local canvas = love.graphics.getCanvas()
-    if canvas then
-        windowWidth, windowHeight = canvas:getDimensions()
-    end
+    -- local windowWidth, windowHeight = love.graphics.getDimensions()
+    -- local canvas = love.graphics.getCanvas()
+    -- if canvas then
+    --     windowWidth, windowHeight = canvas:getDimensions()
+    -- end
+
+    local windowWidth, windowHeight = 1920, 1080
 
     love.graphics.setLineWidth(currentDialog.thickness)
 
@@ -392,10 +394,10 @@ function Talkies.draw()
 
     -- Message avatar
     if currentDialog.image ~= nil then
-        love.graphics.push()
+        -- love.graphics.push()
         love.graphics.setColor(1, 1, 1)
         love.graphics.draw(currentDialog.image, imgX, imgY, 0, imgScale, imgScale)
-        love.graphics.pop()
+        -- love.graphics.pop()
     end
 
     -- Message text
@@ -501,7 +503,7 @@ function Talkies.draw()
             boxY + boxH - currentDialog.fontHeight)
     end
 
-    love.graphics.pop()
+    -- love.graphics.pop()
 
     -- Reset color so other draw operations won't be affected
     love.graphics.setColor(1, 1, 1, 1)
